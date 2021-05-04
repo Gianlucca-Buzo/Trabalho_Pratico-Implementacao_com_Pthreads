@@ -36,13 +36,16 @@ void * fibo (void* dta){
 int main(){
 	int n, *r, tId;
 	struct Atrib a;
+
+	//start (4);
 	n = 10;
 	a.p = 0;
 	a.c = n;
 	//tId = spawn (&a, fibo, &n);
 	//sync(tId, &r);
-
+	finish();
 	printf("Fibonacci (%d) = %d \n", n, r); //Ponto de possível erro
 	return 0;
 
 }
+t
