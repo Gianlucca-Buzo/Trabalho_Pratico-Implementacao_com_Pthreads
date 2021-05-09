@@ -5,26 +5,26 @@
 static pthread_t *processadoresVirtuais;
 static int idTrabalhoAtual = 0;
 
-static struct Trabalho {
+typedef struct Trabalho {
    int idTrabalho; //Id do trabalho
    void* (*funcao)(void*); //Função que vai ser executada
    void* parametrosFuncao; // ParâmetroS de entrada para a função
    void* resultado; // Retorno da função 
-   struct Trabalho *anterior,*proximo;//Ponteiros da lista duplamente encadeada
-};
+   Trabalho *anterior,*proximo;//Ponteiros da lista duplamente encadeada
+}Trabalho;
 
 typedef struct Sentinela{
-    struct Trabalho *primeiraPosicao;
-    struct Trabalho *ultimaPosicao;
+    Trabalho *primeiraPosicao;
+    Trabalho *ultimaPosicao;
 }Sentinela;
 
 Sentinela sentinela;
 
-struct Trabalho *listaTrabalhosProntos, *listaTrabalhosTerminados, *apontadorFinalTrabalhosProntos, *apontadorFinalTrabalhosTerminados;
+Trabalho *listaTrabalhosProntos, *listaTrabalhosTerminados;
 
 void* criaProcessadorVirtual(void* dta) {
     void* resultado;//Resultado da função
-    struct Trabalho *trabalhoAtual;
+    Trabalho *trabalhoAtual;
     while(listaTrabalhosProntos!=NULL) {//TODO verificar essa lógica depois da implementação do Darlei
         trabalhoAtual = pegaUmTrabalho();
         resultado = trabalhoAtual->funcao(trabalhoAtual->parametrosFuncao );  
@@ -33,33 +33,35 @@ void* criaProcessadorVirtual(void* dta) {
     return NULL;
 }
 
-struct Trabalho* pegaUmTrabalho(void){//TODO: DARLEI VAI MEXER AQUI PRA DAR FREE NO TRABALHO ANTERIOR
-    struct Trabalho* trabalhoAtual = malloc(sizeof(struct Trabalho));
-    trabalhoAtual = listaTrabalhosProntos->proximo;
+Trabalho* pegaUmTrabalho(void){//TODO: DARLEI VAI MEXER AQUI PRA DAR FREE NO TRABALHO ANTERIOR
+    Trabalho* trabalhoAtual = malloc(sizeof(Trabalho));
+    //Copia a primeira posição da lista
+    trabalhoAtual = listaTrabalhosProntos;
+    //incrementa a lista
     listaTrabalhosProntos = listaTrabalhosProntos->proximo;
+    //desfaz as conexões da lista encadeada
+    listaTrabalhosProntos->anterior = NULL;
+    trabalhoAtual->proximo = NULL;
+    
     return trabalhoAtual;
 }
 
-void armazenaResultados(struct Trabalho *t, void * resultadoT){//Todo: incrementar a lista encadeada
+void armazenaResultados(Trabalho *t, void * resultadoT){//Todo: incrementar a lista encadeada
     t->resultado = resultadoT;
     //todo: DARLEI AQUI ADICIONA O TRABALHO NO VETOR DE TERMINADOS
 }
 
 void inicializaListas(void){
-
     //Inicializa a lista de trabalhos prontos
-    listaTrabalhosProntos = malloc(sizeof(struct Trabalho));
+    listaTrabalhosProntos = malloc(sizeof(Trabalho));
     listaTrabalhosProntos->anterior = NULL;
 
     sentinela.primeiraPosicao = listaTrabalhosProntos;
 
     //Inicializa a lista de trabalhos terminados
-    listaTrabalhosTerminados = malloc(sizeof(struct Trabalho));
+    listaTrabalhosTerminados = malloc(sizeof(Trabalho));
     listaTrabalhosTerminados->anterior = NULL;
-    
-    //Todo verificar a necessidade destas variáveis
-    apontadorFinalTrabalhosProntos = listaTrabalhosProntos;
-    apontadorFinalTrabalhosTerminados = listaTrabalhosTerminados;
+
 }
 
 
@@ -91,16 +93,17 @@ escalonamento da tarefa. A função retorna 0 (zero) em caso de falha na criaç�
 tarefa ou um valor inteiro positivo maior que 0, considerado o identificador único 
 da tarefa no programa. Caso NULL seja passado como endereço para atrib, devem ser 
 considerados os valores default para os atributos.*/
-struct Trabalho* elementoTrabalho = malloc(sizeof(elementoTrabalho));
-elementoTrabalho->idTrabalho = idTrabalhoAtual;
+struct Trabalho* novoTrabalho = malloc(sizeof(novoTrabalho));
+novoTrabalho->idTrabalho = idTrabalhoAtual;
 idTrabalhoAtual++;//Incrementa a variável global que faz a contagem dos valores dos IDs
-elementoTrabalho->funcao = t;
-elementoTrabalho->parametrosFuncao = dta;
-elementoTrabalho->proximo = NULL;
+novoTrabalho->funcao = t;
+novoTrabalho->parametrosFuncao = dta;
+novoTrabalho->proximo = NULL;
 
-elementoTrabalho->anterior = sentinela.ultimaPosicao;
-sentinela.ultimaPosicao->proximo = elementoTrabalho;
-sentinela.ultimaPosicao = elementoTrabalho;
+//Adiciona elemento na lista encadeada
+novoTrabalho->anterior = sentinela.ultimaPosicao;
+sentinela.ultimaPosicao->proximo = novoTrabalho;
+sentinela.ultimaPosicao = novoTrabalho;
 
 }
 
