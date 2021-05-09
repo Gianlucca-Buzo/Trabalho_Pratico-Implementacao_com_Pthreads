@@ -4,13 +4,14 @@
 
 static pthread_t *processadoresVirtuais;
 static int idTrabalhoAtual = 0;
+static int quantidadeProcessadoresVirtuais = 0;
 
 typedef struct Trabalho
 {
     int idTrabalho;               //Id do trabalho
     void *(*funcao)(void *);      //Função que vai ser executada
-    void *parametrosFuncao;       // ParâmetroS de entrada para a função
-    void *resultado;              // Retorno da função
+    void *parametrosFuncao;       //ParâmetroS de entrada para a função
+    void *resultado;              //Retorno da função
     Trabalho *anterior, *proximo; //Ponteiros da lista duplamente encadeada
 } Trabalho;
 
@@ -28,13 +29,14 @@ void *criaProcessadorVirtual(void *dta)
 {
     void *resultado; //Resultado da função
     Trabalho *trabalhoAtual;
-    while (listaTrabalhosProntos != NULL)
-    { //TODO verificar essa lógica depois da implementação do Darlei
-        trabalhoAtual = pegaUmTrabalho();
-        resultado = trabalhoAtual->funcao(trabalhoAtual->parametrosFuncao);
-        finalizaUmTrabalho(trabalhoAtual, resultado);
+    while(1){
+        if(listaTrabalhosProntos != NULL)
+        { //TODO verificar essa lógica depois da implementação do Darlei
+            trabalhoAtual = pegaUmTrabalho();
+            resultado = trabalhoAtual->funcao(trabalhoAtual->parametrosFuncao);
+            finalizaUmTrabalho(trabalhoAtual, resultado);
+        }
     }
-    return NULL;
 }
 
 Trabalho *pegaUmTrabalho(void)
@@ -78,6 +80,7 @@ int start(int m)
     /*Esta primitiva lança o núcleo de execução, instanciando m processadores virtuais, indicados pelo parâmetro m.
 O retorno 0 (zero) indica falha na instanciação dos processadores virtuais. 
 Um valor maior que 0 indica criação bem sucedida.*/
+    quantidadeProcessadoresVirtuais = m;
     listaTrabalhosProntos = NULL;
     listaTrabalhosTerminados = NULL;
     processadoresVirtuais = malloc(m * sizeof(pthread_t));
@@ -95,6 +98,10 @@ Um valor maior que 0 indica criação bem sucedida.*/
 void finish(void)
 {
     /*Esta primitiva é bloqueante, retornando após todos os processadores virtuais terem finalizado.*/
+    for (int i = 0; i < quantidadeProcessadoresVirtuais; i++)
+    {
+        pthread_join(&processadoresVirtuais[i], NULL);
+    }
 }
 
 int spawn(struct Atrib *atrib, void *(*t)(void *), void *dta)
@@ -131,6 +138,7 @@ considerados os valores default para os atributos.*/
         sentinela.ultimaPosicao->proximo = novoTrabalho;
         sentinela.ultimaPosicao = novoTrabalho;
     }
+    //TODO return  (zero) em caso de falha na criação da tarefa ou um valor inteiro positivo maior que 0
 }
 
 int sync(int tId, void **res)
@@ -140,5 +148,15 @@ identificada no parâmetro tId, que deve ser sincronizada. O retorno da primitiv
 falha ou 1 (um), em caso de sincronização bem sucedida. O parâmetro res contém, como saída, o endereço de 
 memória que contém os resultados de saída. Importante observar: uma tarefa somente pode ser sincroniza uma 
 única vez. Não é permitido múltiplos syncs de uma mesma tarefa*/
-    int status = pthread_join(pthread_t thread, void **value_ptr);
+    Trabalho *aux = listaTrabalhosProntos;
+
+    while ((aux->idTrabalho!= tId) && (aux->proximo != NULL))
+    {
+    
+        aux = aux->proximo;
+    }
+    
+
+    //int status = pthread_join(pthread_t thread, void **value_ptr);
+    
 }
