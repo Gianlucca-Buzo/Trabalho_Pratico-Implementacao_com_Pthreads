@@ -12,7 +12,7 @@ typedef struct Trabalho
     void *(*funcao)(void *);      //Função que vai ser executada
     void *parametrosFuncao;       //ParâmetroS de entrada para a função
     void *resultado;              //Retorno da função
-    Trabalho *anterior, *proximo; //Ponteiros da lista duplamente encadeada
+    struct Trabalho *anterior, *proximo; //Ponteiros da lista duplamente encadeada
 } Trabalho;
 
 typedef struct Sentinela
@@ -24,20 +24,6 @@ typedef struct Sentinela
 Sentinela sentinela, sentinelaTerminados;
 
 Trabalho *listaTrabalhosProntos, *listaTrabalhosTerminados;
-
-void criaProcessadorVirtual(void *dta)
-{
-    void *resultado; //Resultado da função
-    Trabalho *trabalhoAtual;
-    while(1){
-        if(listaTrabalhosProntos != NULL)
-        { //TODO verificar essa lógica depois da implementação do Darlei
-            trabalhoAtual = pegaUmTrabalho(sentinela);
-            resultado = trabalhoAtual->funcao(trabalhoAtual->parametrosFuncao);
-            finalizaUmTrabalho(trabalhoAtual, resultado);
-        }
-    }
-}
 
 Trabalho* pegaUmTrabalho(Sentinela sentinelaAux)
 {
@@ -56,8 +42,43 @@ Trabalho* pegaUmTrabalho(Sentinela sentinelaAux)
     sentinelaAux.primeiraPosicao->anterior = NULL;
     trabalhoAtual->proximo = NULL;
     
-    
     return trabalhoAtual;
+}
+
+void armazenaResultados(Trabalho *trabalho, void *resultadoT)
+{ //Todo: incrementar a lista encadeada
+    trabalho->resultado = resultadoT;
+    if (listaTrabalhosTerminados == NULL)
+    {
+        //aloca a lista
+        listaTrabalhosTerminados = malloc(sizeof(Trabalho));
+        listaTrabalhosTerminados->anterior = NULL;
+        //organiza a sentinela
+        sentinelaTerminados.primeiraPosicao = listaTrabalhosTerminados;
+        sentinelaTerminados.ultimaPosicao = listaTrabalhosTerminados;
+        //Adiciona na lista
+        listaTrabalhosTerminados = trabalho;
+    }
+    else
+    {
+        sentinelaTerminados.ultimaPosicao->proximo = trabalho;
+        trabalho->anterior = sentinelaTerminados.ultimaPosicao;
+        sentinelaTerminados.ultimaPosicao = trabalho;
+    }
+}
+
+void* criaProcessadorVirtual(void *dta)
+{
+    void *resultado; //Resultado da função
+    Trabalho *trabalhoAtual;
+    while(1){
+        if(listaTrabalhosProntos != NULL)
+        { //TODO verificar essa lógica depois da implementação do Darlei
+            trabalhoAtual = pegaUmTrabalho(sentinela);
+            resultado = trabalhoAtual->funcao(trabalhoAtual->parametrosFuncao);
+            armazenaResultados(trabalhoAtual, resultado);
+        }
+    }
 }
 
 Trabalho* pegaUmTrabalhoPorId(int id, Sentinela sentinelaAux)
@@ -95,27 +116,7 @@ Trabalho* pegaUmTrabalhoPorId(int id, Sentinela sentinelaAux)
     return trabalhoAtual;
 }
 
-void armazenaResultados(Trabalho *trabalho, void *resultadoT)
-{ //Todo: incrementar a lista encadeada
-    trabalho->resultado = resultadoT;
-    if (listaTrabalhosTerminados == NULL)
-    {
-        //aloca a lista
-        listaTrabalhosTerminados = malloc(sizeof(Trabalho));
-        listaTrabalhosTerminados->anterior = NULL;
-        //organiza a sentinela
-        sentinelaTerminados.primeiraPosicao = listaTrabalhosTerminados;
-        sentinelaTerminados.ultimaPosicao = listaTrabalhosTerminados;
-        //Adiciona na lista
-        listaTrabalhosTerminados = trabalho;
-    }
-    else
-    {
-        sentinelaTerminados.ultimaPosicao->proximo = trabalho;
-        trabalho->anterior = sentinelaTerminados.ultimaPosicao;
-        sentinelaTerminados.ultimaPosicao = trabalho;
-    }
-}
+
 
 int start(int m)
 {
@@ -142,7 +143,7 @@ void finish(void)
     /*Esta primitiva é bloqueante, retornando após todos os processadores virtuais terem finalizado.*/
     for (int i = 0; i < quantidadeProcessadoresVirtuais; i++)
     {
-        pthread_join(&processadoresVirtuais[i], NULL);
+        pthread_join(processadoresVirtuais[i], NULL);
     }
 }
 
@@ -204,6 +205,4 @@ memória que contém os resultados de saída. Importante observar: uma tarefa so
     }
     res = (void **) aux->resultado;
     return 1;
-
-    
 }
