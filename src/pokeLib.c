@@ -25,31 +25,73 @@ Sentinela sentinela, sentinelaTerminados;
 
 Trabalho *listaTrabalhosProntos, *listaTrabalhosTerminados;
 
-void *criaProcessadorVirtual(void *dta)
+void criaProcessadorVirtual(void *dta)
 {
     void *resultado; //Resultado da função
     Trabalho *trabalhoAtual;
     while(1){
         if(listaTrabalhosProntos != NULL)
         { //TODO verificar essa lógica depois da implementação do Darlei
-            trabalhoAtual = pegaUmTrabalho();
+            trabalhoAtual = pegaUmTrabalho(sentinela);
             resultado = trabalhoAtual->funcao(trabalhoAtual->parametrosFuncao);
             finalizaUmTrabalho(trabalhoAtual, resultado);
         }
     }
 }
 
-Trabalho *pegaUmTrabalho(void)
+Trabalho* pegaUmTrabalho(Sentinela sentinelaAux)
 {
     Trabalho *trabalhoAtual = malloc(sizeof(Trabalho));
     //Copia a primeira posição da lista
-    trabalhoAtual = listaTrabalhosProntos;
+    if(sentinelaAux.primeiraPosicao == NULL){
+        return NULL;
+    }
+    trabalhoAtual = sentinelaAux.primeiraPosicao;
     //incrementa a lista
-    listaTrabalhosProntos = listaTrabalhosProntos->proximo;
+    sentinelaAux.primeiraPosicao = sentinelaAux.primeiraPosicao->proximo;
+    if(sentinelaAux.primeiraPosicao == NULL){
+        return trabalhoAtual;
+    }
     //desfaz as conexões para tirar o trabalhoAtual lista encadeada
-    listaTrabalhosProntos->anterior = NULL;
+    sentinelaAux.primeiraPosicao->anterior = NULL;
     trabalhoAtual->proximo = NULL;
+    
+    
+    return trabalhoAtual;
+}
 
+Trabalho* pegaUmTrabalhoPorId(int id, Sentinela sentinelaAux)
+{
+    Trabalho *trabalhoAtual = malloc(sizeof(Trabalho));
+    Trabalho *trabalhoAux = malloc(sizeof(Trabalho));
+
+    trabalhoAtual = sentinelaAux.primeiraPosicao;
+    while ((trabalhoAtual->idTrabalho != id) && (trabalhoAtual != NULL))
+    {
+        trabalhoAtual = trabalhoAtual->proximo;
+    }
+    
+    if(trabalhoAtual == NULL){
+        return NULL;
+    }
+
+    else if (trabalhoAtual->proximo != NULL && trabalhoAtual->anterior!=NULL) // Não é a primeira nem a última posição
+    {
+        trabalhoAtual->anterior->proximo = trabalhoAtual->proximo;
+        trabalhoAtual->proximo->anterior = trabalhoAtual->anterior;
+        trabalhoAtual->proximo = NULL;
+        trabalhoAtual->anterior = NULL;
+    }
+    else if (trabalhoAtual->proximo == NULL){ // É a última
+        trabalhoAtual->anterior->proximo = NULL;
+        sentinelaAux.ultimaPosicao = trabalhoAtual->anterior;
+        trabalhoAtual->anterior = NULL;
+    }else if (trabalhoAtual->anterior == NULL){// É a primeira
+        trabalhoAtual->proximo->anterior = NULL;
+        sentinelaAux.primeiraPosicao = trabalhoAtual->proximo;
+        trabalhoAtual->proximo = NULL;
+    }
+    
     return trabalhoAtual;
 }
 
@@ -113,7 +155,7 @@ escalonamento da tarefa. A função retorna 0 (zero) em caso de falha na criaç�
 tarefa ou um valor inteiro positivo maior que 0, considerado o identificador único 
 da tarefa no programa. Caso NULL seja passado como endereço para atrib, devem ser 
 considerados os valores default para os atributos.*/
-    struct Trabalho *novoTrabalho = malloc(sizeof(novoTrabalho));
+    Trabalho *novoTrabalho = malloc(sizeof(Trabalho));
     novoTrabalho->idTrabalho = idTrabalhoAtual;
     idTrabalhoAtual++; //Incrementa a variável global que faz a contagem dos valores dos IDs
     novoTrabalho->funcao = t;
@@ -148,15 +190,20 @@ identificada no parâmetro tId, que deve ser sincronizada. O retorno da primitiv
 falha ou 1 (um), em caso de sincronização bem sucedida. O parâmetro res contém, como saída, o endereço de 
 memória que contém os resultados de saída. Importante observar: uma tarefa somente pode ser sincroniza uma 
 única vez. Não é permitido múltiplos syncs de uma mesma tarefa*/
-    Trabalho *aux = listaTrabalhosProntos;
+    Trabalho *aux;
 
-    while ((aux->idTrabalho!= tId) && (aux->proximo != NULL))
-    {
-    
-        aux = aux->proximo;
+    aux = pegaUmTrabalhoPorId(tId, sentinelaTerminados); // Retorna o trabalho ou null se não encontrar
+    if (aux == NULL){
+        aux = pegaUmTrabalhoPorId(tId, sentinela);
+        if (aux == NULL){
+            aux = pegaUmTrabalho(sentinelaTerminados);
+            if (aux == NULL){
+                return 0;
+            }          
+        }
     }
-    
+    res = (void **) aux->resultado;
+    return 1;
 
-    //int status = pthread_join(pthread_t thread, void **value_ptr);
     
 }
