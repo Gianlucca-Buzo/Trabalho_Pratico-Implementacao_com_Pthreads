@@ -181,6 +181,8 @@ considerados os valores default para os atributos.*/
         sentinela.ultimaPosicao->proximo = novoTrabalho;
         sentinela.ultimaPosicao = novoTrabalho;
     }
+
+    return 1;
     //TODO return  (zero) em caso de falha na criação da tarefa ou um valor inteiro positivo maior que 0
 }
 
