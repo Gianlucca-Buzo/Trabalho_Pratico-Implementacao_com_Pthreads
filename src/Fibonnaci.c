@@ -37,7 +37,7 @@ void * fibo (void* dta){
 int main(){
 	int n, *r, tId;
 	struct Atrib a;
-
+	printf("main 40");
 	start (4);
 	n = 10;
 	a.p = 0;

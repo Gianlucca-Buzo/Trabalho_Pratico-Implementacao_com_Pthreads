@@ -53,6 +53,7 @@ void armazenaResultados(Trabalho *trabalho, void *resultadoT)
         //aloca a lista
         listaTrabalhosTerminados = malloc(sizeof(Trabalho));
         listaTrabalhosTerminados->anterior = NULL;
+        listaTrabalhosTerminados->proximo = NULL;
         //organiza a sentinela
         sentinelaTerminados.primeiraPosicao = listaTrabalhosTerminados;
         sentinelaTerminados.ultimaPosicao = listaTrabalhosTerminados;
@@ -83,12 +84,17 @@ void* criaProcessadorVirtual(void *dta)
 
 Trabalho* pegaUmTrabalhoPorId(int id, Sentinela sentinelaAux)
 {
+    int contador = 0;
     Trabalho *trabalhoAtual = malloc(sizeof(Trabalho));
     Trabalho *trabalhoAux = malloc(sizeof(Trabalho));
-
+    printf("Linha 89");
+    
     trabalhoAtual = sentinelaAux.primeiraPosicao;
-    while ((trabalhoAtual->idTrabalho != id) && (trabalhoAtual != NULL))
-    {
+    printf("Primeira posicao: %p",sentinelaAux.primeiraPosicao);
+    printf("Linha 91");
+    while ((trabalhoAtual != NULL) && (trabalhoAtual->idTrabalho != id))
+    {     
+        printf("Execucao do while numero: %d", contador);
         trabalhoAtual = trabalhoAtual->proximo;
     }
     
@@ -123,6 +129,7 @@ int start(int m)
     /*Esta primitiva lança o núcleo de execução, instanciando m processadores virtuais, indicados pelo parâmetro m.
 O retorno 0 (zero) indica falha na instanciação dos processadores virtuais. 
 Um valor maior que 0 indica criação bem sucedida.*/
+    printf("Start 132");
     quantidadeProcessadoresVirtuais = m;
     listaTrabalhosProntos = NULL;
     listaTrabalhosTerminados = NULL;
@@ -134,6 +141,7 @@ Um valor maior que 0 indica criação bem sucedida.*/
         {             //Se houve problema na criação de um thread
             return 0; //Retorna falha na instanciação
         }
+        printf("Start 144 i = %d", i);
     }
     return 1; //Criação de todas as threads de maneira bem sucedida
 }
@@ -169,6 +177,7 @@ considerados os valores default para os atributos.*/
         //aloca
         listaTrabalhosProntos = malloc(sizeof(Trabalho));
         listaTrabalhosProntos->anterior = NULL;
+        listaTrabalhosProntos->proximo = NULL;
         //organiza o sentinela
         sentinela.primeiraPosicao = listaTrabalhosProntos;
         sentinela.ultimaPosicao = listaTrabalhosProntos;
