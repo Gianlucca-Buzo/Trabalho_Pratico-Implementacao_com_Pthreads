@@ -175,14 +175,14 @@ considerados os valores default para os atributos.*/
     if (listaTrabalhosProntos == NULL)
     { //se é o primeiro
         //aloca
-        listaTrabalhosProntos = malloc(sizeof(Trabalho));
+        listaTrabalhosProntos = novoTrabalho;//malloc(sizeof(Trabalho));
         listaTrabalhosProntos->anterior = NULL;
         listaTrabalhosProntos->proximo = NULL;
         //organiza o sentinela
         sentinela.primeiraPosicao = listaTrabalhosProntos;
         sentinela.ultimaPosicao = listaTrabalhosProntos;
         //insere na lista
-        listaTrabalhosProntos = novoTrabalho;
+        //listaTrabalhosProntos = novoTrabalho;//Colocar essa linha na 178.
     }
     else // Caso já tenha algo na lista
     {
