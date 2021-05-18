@@ -1,18 +1,20 @@
 #include <pthread.h>
 #include <malloc.h>
 #include "pokeLib.h"
+#define typeof(var) _Generic( (var),\
 
 static pthread_t *processadoresVirtuais;
-static int idTrabalhoAtual = 0;
+static int idTrabalhoAtual = 1;
 static int quantidadeProcessadoresVirtuais = 0;
+int variavelDeControle = 1;
 
 typedef struct Trabalho
 {
-    int idTrabalho;               //Id do trabalho
-    void *(*funcao)(void *);      //Função que vai ser executada
-    void *parametrosFuncao;       //ParâmetroS de entrada para a função
-    void *resultado;              //Retorno da função
-    struct Trabalho *anterior, *proximo; //Ponteiros da lista duplamente encadeada
+    int idTrabalho;                      // Id do trabalho
+    void *(*funcao)(void *);             // Função que vai ser executada
+    void *parametrosFuncao;              // ParâmetroS de entrada para a função
+    void *resultado;                     // Retorno da função
+    struct Trabalho *anterior, *proximo; // Ponteiros da lista duplamente encadeada
 } Trabalho;
 
 typedef struct Sentinela
@@ -28,7 +30,7 @@ Trabalho *listaTrabalhosProntos, *listaTrabalhosTerminados;
 Trabalho* pegaUmTrabalho(Sentinela sentinelaAux)
 {
     Trabalho *trabalhoAtual = malloc(sizeof(Trabalho));
-    //Copia a primeira posição da lista
+    //copia a primeira posição da lista
     if(sentinelaAux.primeiraPosicao == NULL){
         return NULL;
     }
@@ -46,8 +48,10 @@ Trabalho* pegaUmTrabalho(Sentinela sentinelaAux)
 }
 
 void armazenaResultados(Trabalho *trabalho, void *resultadoT)
-{ //Todo: incrementar a lista encadeada
+{ 
     trabalho->resultado = resultadoT;
+   // int* res =  (int *)trabalho->resultado;
+	//printf("ccccc%d\n", *res);
     if (listaTrabalhosTerminados == NULL)
     {
         //aloca a lista
@@ -57,7 +61,7 @@ void armazenaResultados(Trabalho *trabalho, void *resultadoT)
         //organiza a sentinela
         sentinelaTerminados.primeiraPosicao = listaTrabalhosTerminados;
         sentinelaTerminados.ultimaPosicao = listaTrabalhosTerminados;
-        //Adiciona na lista
+        //adiciona na lista
         listaTrabalhosTerminados = trabalho;
     }
     else
@@ -70,13 +74,16 @@ void armazenaResultados(Trabalho *trabalho, void *resultadoT)
 
 void* criaProcessadorVirtual(void *dta)
 {
-    void *resultado; //Resultado da função
+    void *resultado; //resultado da função
     Trabalho *trabalhoAtual;
-    while(1){
+    while(variavelDeControle){
+        //printf("oi");
         if(listaTrabalhosProntos != NULL)
-        { //TODO verificar essa lógica depois da implementação do Darlei
+        { 
             trabalhoAtual = pegaUmTrabalho(sentinela);
             resultado = trabalhoAtual->funcao(trabalhoAtual->parametrosFuncao);
+            //int* res =  (int *)resultado;
+	        //printf("bbbbbb%d\n", *res);
             armazenaResultados(trabalhoAtual, resultado);
         }
     }
@@ -85,25 +92,27 @@ void* criaProcessadorVirtual(void *dta)
 Trabalho* pegaUmTrabalhoPorId(int id, Sentinela sentinelaAux)
 {
     int contador = 0;
+    printf("aa");
     Trabalho *trabalhoAtual = malloc(sizeof(Trabalho));
-    Trabalho *trabalhoAux = malloc(sizeof(Trabalho));
-    printf("Linha 89");
-    
+    //Trabalho *trabalhoAux = malloc(sizeof(Trabalho));
+    printf("k");
     trabalhoAtual = sentinelaAux.primeiraPosicao;
-    printf("Primeira posicao: %p",sentinelaAux.primeiraPosicao);
-    printf("Linha 91");
-    while ((trabalhoAtual != NULL) && (trabalhoAtual->idTrabalho != id))
+    while (trabalhoAtual != NULL && (trabalhoAtual->idTrabalho != id))
     {     
-        printf("Execucao do while numero: %d", contador);
         trabalhoAtual = trabalhoAtual->proximo;
-    }
-    
-    if(trabalhoAtual == NULL){
-        return NULL;
+        
     }
 
-    else if (trabalhoAtual->proximo != NULL && trabalhoAtual->anterior!=NULL) // Não é a primeira nem a última posição
+    if (trabalhoAtual == NULL){
+        printf("Nulo");
+        return NULL;
+    }
+    
+   
+
+    if (trabalhoAtual->proximo != NULL && trabalhoAtual->anterior != NULL) // Não é a primeira nem a última posição
     {
+        printf(" null");
         trabalhoAtual->anterior->proximo = trabalhoAtual->proximo;
         trabalhoAtual->proximo->anterior = trabalhoAtual->anterior;
         trabalhoAtual->proximo = NULL;
@@ -129,10 +138,20 @@ int start(int m)
     /*Esta primitiva lança o núcleo de execução, instanciando m processadores virtuais, indicados pelo parâmetro m.
 O retorno 0 (zero) indica falha na instanciação dos processadores virtuais. 
 Um valor maior que 0 indica criação bem sucedida.*/
-    printf("Start 132");
     quantidadeProcessadoresVirtuais = m;
     listaTrabalhosProntos = NULL;
     listaTrabalhosTerminados = NULL;
+
+    sentinela.primeiraPosicao = malloc(sizeof(Trabalho));
+    sentinela.primeiraPosicao->proximo = NULL;
+    sentinela.primeiraPosicao->anterior = NULL;
+    sentinela.ultimaPosicao = sentinela.primeiraPosicao;
+
+    sentinelaTerminados.primeiraPosicao = malloc(sizeof(Trabalho));
+    sentinelaTerminados.primeiraPosicao->proximo = NULL;
+    sentinelaTerminados.primeiraPosicao->anterior = NULL;
+    sentinelaTerminados.ultimaPosicao = sentinelaTerminados.primeiraPosicao;
+    
     processadoresVirtuais = malloc(m * sizeof(pthread_t));
     for (int i = 0; i < m; i++)
     {
@@ -141,13 +160,14 @@ Um valor maior que 0 indica criação bem sucedida.*/
         {             //Se houve problema na criação de um thread
             return 0; //Retorna falha na instanciação
         }
-        printf("Start 144 i = %d", i);
+        printf("Iniciando thread = %d \n", i);
     }
     return 1; //Criação de todas as threads de maneira bem sucedida
 }
 
 void finish(void)
-{
+{   
+    variavelDeControle = 0;
     /*Esta primitiva é bloqueante, retornando após todos os processadores virtuais terem finalizado.*/
     for (int i = 0; i < quantidadeProcessadoresVirtuais; i++)
     {
@@ -170,7 +190,8 @@ considerados os valores default para os atributos.*/
     novoTrabalho->funcao = t;
     novoTrabalho->parametrosFuncao = dta;
     novoTrabalho->proximo = NULL;
-
+    //int *aux = (int*)dta;
+    //printf("aa%d\n", *aux);
     //Adiciona elemento na lista encadeada
     if (listaTrabalhosProntos == NULL)
     { //se é o primeiro
@@ -191,8 +212,9 @@ considerados os valores default para os atributos.*/
         sentinela.ultimaPosicao = novoTrabalho;
     }
 
-    return 1;
-    //TODO return  (zero) em caso de falha na criação da tarefa ou um valor inteiro positivo maior que 0
+    printf("eeeeeee%d\n",novoTrabalho->idTrabalho);
+    return novoTrabalho->idTrabalho;
+    //return 1;
 }
 
 int sync(int tId, void **res)
@@ -203,17 +225,28 @@ falha ou 1 (um), em caso de sincronização bem sucedida. O parâmetro res cont�
 memória que contém os resultados de saída. Importante observar: uma tarefa somente pode ser sincroniza uma 
 única vez. Não é permitido múltiplos syncs de uma mesma tarefa*/
     Trabalho *aux;
+    printf("tId: %d: \n",tId);
 
     aux = pegaUmTrabalhoPorId(tId, sentinelaTerminados); // Retorna o trabalho ou null se não encontrar
+    printf("PegaTrabalhoPorId1");
     if (aux == NULL){
         aux = pegaUmTrabalhoPorId(tId, sentinela);
+        printf("PegaTrabalhoPorId2");
         if (aux == NULL){
             aux = pegaUmTrabalho(sentinelaTerminados);
+            printf("PegaTrabalho");
             if (aux == NULL){
-                return 0;
+                printf("jkj");
+                return 0;   
             }          
         }
     }
-    res = (void **) aux->resultado;
+    // printf("%s\n", typeof(aux->resultado));
+    //int * auxix = (int*) aux->resultado;
+    // printf("kkk: %d\n",*auxix );
+    //int* resu =  (int*) aux->resultado;
+	//printf("ddddd%d\n", *resu);
+    //*res = aux->resultado;
+    //res = (void **) aux->resultado;
     return 1;
 }
